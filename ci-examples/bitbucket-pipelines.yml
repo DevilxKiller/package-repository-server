@@ -1,0 +1,86 @@
+# bitbucket-pipelines.yml
+# Bitbucket Pipelines for publishing packages
+
+image: debian:bookworm
+
+definitions:
+  steps:
+    - step: &build-deb
+        name: Build DEB Package
+        script:
+          - apt-get update && apt-get install -y dpkg-dev debhelper
+          - dpkg-deb --build ./package mypackage_${BITBUCKET_TAG}_amd64.deb
+        artifacts:
+          - "*.deb"
+
+    - step: &publish-deb
+        name: Publish DEB to Repository
+        image: curlimages/curl:latest
+        script:
+          - |
+            curl -X POST \
+              -H "X-API-Key: ${PACKAGE_REPO_API_KEY}" \
+              -F "file=@mypackage_${BITBUCKET_TAG}_amd64.deb" \
+              "${PACKAGE_REPO_URL}/api/v1/upload/deb"
+
+    - step: &build-rpm
+        name: Build RPM Package
+        image: fedora:latest
+        script:
+          - dnf install -y rpm-build rpmdevtools
+          - rpmdev-setuptree
+          - rpmbuild -ba mypackage.spec
+          - cp ~/rpmbuild/RPMS/x86_64/*.rpm .
+        artifacts:
+          - "*.rpm"
+
+    - step: &publish-rpm
+        name: Publish RPM to Repository
+        image: curlimages/curl:latest
+        script:
+          - |
+            for rpm in *.rpm; do
+              curl -X POST \
+                -H "X-API-Key: ${PACKAGE_REPO_API_KEY}" \
+                -F "file=@${rpm}" \
+                "${PACKAGE_REPO_URL}/api/v1/upload/rpm"
+            done
+
+pipelines:
+  tags:
+    # Trigger on version tags like v1.0.0
+    'v*':
+      - step: *build-deb
+      - step: *publish-deb
+      - step: *build-rpm
+      - step: *publish-rpm
+
+  custom:
+    # Manual trigger for publishing specific packages
+    publish-deb:
+      - variables:
+          - name: PACKAGE_PATH
+            default: "./dist/package.deb"
+      - step:
+          name: Publish DEB
+          image: curlimages/curl:latest
+          script:
+            - |
+              curl -X POST \
+                -H "X-API-Key: ${PACKAGE_REPO_API_KEY}" \
+                -F "file=@${PACKAGE_PATH}" \
+                "${PACKAGE_REPO_URL}/api/v1/upload/deb"
+
+    publish-rpm:
+      - variables:
+          - name: PACKAGE_PATH
+            default: "./dist/package.rpm"
+      - step:
+          name: Publish RPM
+          image: curlimages/curl:latest
+          script:
+            - |
+              curl -X POST \
+                -H "X-API-Key: ${PACKAGE_REPO_API_KEY}" \
+                -F "file=@${PACKAGE_PATH}" \
+                "${PACKAGE_REPO_URL}/api/v1/upload/rpm"

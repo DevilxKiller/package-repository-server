@@ -1,0 +1,59 @@
+# Build artifacts
+/server/target/
+*.o
+*.a
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Secrets (never commit these!)
+*.pem
+*.key
+secrets/
+credentials/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# Kubernetes secrets
+*-secret.yaml
+*-secrets.yaml
+
+# Package files (test packages)
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.apk
+
+# Logs
+*.log
+logs/
+
+# Data directories
+/data/
+
+# Certificate files
+certs/
+*.crt
+*.cert

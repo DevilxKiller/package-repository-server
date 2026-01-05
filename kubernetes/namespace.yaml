@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+    app.kubernetes.io/component: infrastructure

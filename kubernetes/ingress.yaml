@@ -1,0 +1,74 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: package-repo
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+  annotations:
+    # Nginx Ingress Controller
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+    # Enable CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+
+    # Optional: cert-manager for automatic TLS
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+
+    # Optional: Traefik annotations
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+
+    # Optional: AWS ALB annotations
+    # kubernetes.io/ingress.class: alb
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: nginx  # Change based on your ingress controller
+
+  # TLS configuration
+  # tls:
+  #   - hosts:
+  #       - packages.example.com
+  #     secretName: package-repo-tls
+
+  rules:
+    - host: packages.example.com  # Change to your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: package-repo
+                port:
+                  number: 80
+
+---
+# Optional: Ingress for API-only access
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: package-repo-api
+#   namespace: package-repo
+#   annotations:
+#     nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: api.packages.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: package-repo
+#                 port:
+#                   number: 8080

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: package-repo
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+    app.kubernetes.io/component: server
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: api
+      port: 8080
+      targetPort: api
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: package-repo
+
+---
+# Optional: NodePort service for direct access
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: package-repo-nodeport
+#   namespace: package-repo
+# spec:
+#   type: NodePort
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: http
+#       nodePort: 30080
+#   selector:
+#     app.kubernetes.io/name: package-repo
+
+---
+# Optional: LoadBalancer service for cloud providers
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: package-repo-lb
+#   namespace: package-repo
+#   annotations:
+#     # AWS
+#     # service.beta.kubernetes.io/aws-load-balancer-type: nlb
+#     # GCP
+#     # cloud.google.com/load-balancer-type: External
+#     # Azure
+#     # service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+# spec:
+#   type: LoadBalancer
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: http
+#   selector:
+#     app.kubernetes.io/name: package-repo

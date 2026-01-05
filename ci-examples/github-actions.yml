@@ -1,0 +1,82 @@
+# .github/workflows/publish-package.yml
+# GitHub Actions workflow for publishing packages to your repository
+
+name: Publish Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      package_path:
+        description: 'Path to package file'
+        required: true
+
+env:
+  REPO_URL: ${{ vars.PACKAGE_REPO_URL }}  # e.g., https://packages.example.com
+  API_KEY: ${{ secrets.PACKAGE_REPO_API_KEY }}
+
+jobs:
+  publish-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build DEB package
+        run: |
+          # Your build commands here
+          dpkg-deb --build ./package mypackage_${{ github.ref_name }}_amd64.deb
+
+      - name: Upload to repository
+        run: |
+          curl -X POST \
+            -H "X-API-Key: ${{ env.API_KEY }}" \
+            -F "file=@mypackage_${{ github.ref_name }}_amd64.deb" \
+            "${{ env.REPO_URL }}/api/v1/upload/deb"
+
+  publish-rpm:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: dnf install -y rpm-build rpmdevtools
+
+      - name: Build RPM package
+        run: |
+          rpmdev-setuptree
+          # Your RPM build commands here
+          rpmbuild -ba mypackage.spec
+
+      - name: Upload to repository
+        run: |
+          curl -X POST \
+            -H "X-API-Key: ${{ env.API_KEY }}" \
+            -F "file=@~/rpmbuild/RPMS/x86_64/mypackage-*.rpm" \
+            "${{ env.REPO_URL }}/api/v1/upload/rpm"
+
+  # Multi-architecture build example
+  publish-multi-arch:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (for ARM64)
+        if: matrix.arch == 'arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build package for ${{ matrix.arch }}
+        run: |
+          # Build for target architecture
+          ./build.sh --arch ${{ matrix.arch }}
+
+      - name: Upload to repository
+        run: |
+          curl -X POST \
+            -H "X-API-Key: ${{ env.API_KEY }}" \
+            -F "file=@dist/mypackage_*_${{ matrix.arch }}.deb" \
+            "${{ env.REPO_URL }}/api/v1/upload/deb"

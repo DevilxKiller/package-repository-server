@@ -1,0 +1,117 @@
+# .drone.yml
+# Drone CI pipeline for publishing packages
+
+kind: pipeline
+type: docker
+name: publish-packages
+
+trigger:
+  event:
+    - tag
+
+steps:
+  - name: build-deb
+    image: debian:bookworm
+    commands:
+      - apt-get update && apt-get install -y dpkg-dev debhelper
+      - dpkg-deb --build ./package mypackage_${DRONE_TAG}_amd64.deb
+
+  - name: publish-deb
+    image: curlimages/curl:latest
+    environment:
+      API_KEY:
+        from_secret: package_repo_api_key
+      REPO_URL:
+        from_secret: package_repo_url
+    commands:
+      - |
+        curl -X POST \
+          -H "X-API-Key: $API_KEY" \
+          -F "file=@mypackage_${DRONE_TAG}_amd64.deb" \
+          "$REPO_URL/api/v1/upload/deb"
+    depends_on:
+      - build-deb
+
+---
+kind: pipeline
+type: docker
+name: publish-rpm
+
+trigger:
+  event:
+    - tag
+
+steps:
+  - name: build-rpm
+    image: fedora:latest
+    commands:
+      - dnf install -y rpm-build rpmdevtools
+      - rpmdev-setuptree
+      - rpmbuild -ba mypackage.spec
+      - cp ~/rpmbuild/RPMS/x86_64/*.rpm .
+
+  - name: publish-rpm
+    image: curlimages/curl:latest
+    environment:
+      API_KEY:
+        from_secret: package_repo_api_key
+      REPO_URL:
+        from_secret: package_repo_url
+    commands:
+      - |
+        for rpm in *.rpm; do
+          curl -X POST \
+            -H "X-API-Key: $API_KEY" \
+            -F "file=@${rpm}" \
+            "$REPO_URL/api/v1/upload/rpm"
+        done
+    depends_on:
+      - build-rpm
+
+---
+kind: pipeline
+type: docker
+name: publish-arch
+
+trigger:
+  event:
+    - tag
+
+steps:
+  - name: build-arch
+    image: archlinux:latest
+    commands:
+      - pacman -Sy --noconfirm base-devel git
+      - useradd -m builder
+      - chown -R builder:builder .
+      - su builder -c "makepkg -s --noconfirm"
+
+  - name: publish-arch
+    image: curlimages/curl:latest
+    environment:
+      API_KEY:
+        from_secret: package_repo_api_key
+      REPO_URL:
+        from_secret: package_repo_url
+    commands:
+      - |
+        curl -X POST \
+          -H "X-API-Key: $API_KEY" \
+          -F "file=@*.pkg.tar.zst" \
+          "$REPO_URL/api/v1/upload/arch"
+    depends_on:
+      - build-arch
+
+---
+kind: secret
+name: package_repo_api_key
+get:
+  path: secrets/package-repo
+  name: api_key
+
+---
+kind: secret
+name: package_repo_url
+get:
+  path: secrets/package-repo
+  name: url

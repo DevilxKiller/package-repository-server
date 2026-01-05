@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: package-repo-data
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  # Uncomment and set your storage class
+  # storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: package-repo-gpg
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+    app.kubernetes.io/component: gpg
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # Uncomment and set your storage class
+  # storageClassName: standard

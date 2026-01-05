@@ -1,0 +1,116 @@
+# Multi-stage build for Package Repository Server
+# Supports: APT (deb), YUM/DNF (rpm), Pacman (Arch), APK (Alpine)
+# Architectures: amd64, arm64
+# Uses Ferron (Rust) for static file serving
+
+# Build stage for Rust API server and Ferron
+FROM rust:1.75-alpine AS builder
+
+RUN apk add --no-cache musl-dev openssl-dev openssl-libs-static pkgconf git
+
+WORKDIR /build
+
+# Build the API server
+COPY server/ ./server/
+RUN cd server && cargo build --release
+
+# Install Ferron
+RUN cargo install ferron --locked
+
+# Final image based on Alpine for small size + APK tools
+FROM alpine:3.19
+
+LABEL maintainer="Package Repository Server"
+LABEL description="Multi-format package repository server (deb, rpm, arch, alpine)"
+
+# Install all required tools for package management
+RUN apk add --no-cache \
+    bash \
+    curl \
+    gnupg \
+    supervisor \
+    dpkg \
+    createrepo_c \
+    rpm \
+    pacman \
+    apk-tools \
+    xz \
+    gzip \
+    bzip2 \
+    zstd \
+    tar \
+    coreutils \
+    findutils \
+    openssl \
+    ca-certificates \
+    certbot
+
+# Create directory structure for repositories
+RUN mkdir -p \
+    /data/packages/deb/pool \
+    /data/packages/deb/dists \
+    /data/packages/rpm \
+    /data/packages/arch \
+    /data/packages/alpine \
+    /data/gpg \
+    /data/config \
+    /data/certs \
+    /data/acme/.well-known/acme-challenge \
+    /var/log/package-repo \
+    /etc/ferron
+
+# Copy the Rust server binary
+COPY --from=builder /build/server/target/release/package-repo-server /usr/local/bin/
+
+# Copy Ferron binary
+COPY --from=builder /usr/local/cargo/bin/ferron /usr/local/bin/
+
+# Copy processing scripts
+COPY scripts/entrypoint.sh /entrypoint.sh
+COPY scripts/process-deb.sh /usr/local/bin/process-deb
+COPY scripts/process-rpm.sh /usr/local/bin/process-rpm
+COPY scripts/process-arch.sh /usr/local/bin/process-arch
+COPY scripts/process-alpine.sh /usr/local/bin/process-alpine
+COPY scripts/setup-ssl.sh /usr/local/bin/setup-ssl
+
+RUN chmod +x /entrypoint.sh \
+    /usr/local/bin/process-deb \
+    /usr/local/bin/process-rpm \
+    /usr/local/bin/process-arch \
+    /usr/local/bin/process-alpine \
+    /usr/local/bin/package-repo-server \
+    /usr/local/bin/ferron \
+    /usr/local/bin/setup-ssl
+
+# Copy supervisord configuration
+COPY supervisord.conf /etc/supervisord.conf
+
+# Environment variables
+ENV REPO_DATA_DIR=/data/packages \
+    REPO_GPG_DIR=/data/gpg \
+    REPO_CONFIG_DIR=/data/config \
+    REPO_API_PORT=8080 \
+    FERRON_PORT=80 \
+    GPG_KEY_ID="" \
+    API_KEYS="" \
+    S3_ENABLED=false \
+    S3_ENDPOINT="" \
+    S3_BUCKET="" \
+    S3_ACCESS_KEY="" \
+    S3_SECRET_KEY="" \
+    RUST_LOG=info
+
+# Expose ports
+# 80 - HTTP
+# 443 - HTTPS
+# 8080 - API server
+EXPOSE 80 443 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Volumes for persistent data
+VOLUME ["/data/packages", "/data/gpg", "/data/config"]
+
+ENTRYPOINT ["/entrypoint.sh"]

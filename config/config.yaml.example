@@ -1,0 +1,113 @@
+# Package Repository Server Configuration
+# Copy this file to config.yaml and modify as needed
+
+# Server settings
+server:
+  # API server port
+  api_port: 8080
+  # Nginx port (package serving)
+  nginx_port: 80
+  # Log level (trace, debug, info, warn, error)
+  log_level: info
+
+# Authentication
+auth:
+  # API keys for upload access (comma-separated or list)
+  api_keys:
+    - "your-secure-api-key-here"
+    - "another-api-key-for-ci"
+
+  # Optional: Enable API key rotation
+  # key_rotation_days: 90
+
+# Storage settings
+storage:
+  # Local storage path
+  data_dir: /data/packages
+
+  # GPG keys directory
+  gpg_dir: /data/gpg
+
+  # S3-compatible storage (optional)
+  s3:
+    enabled: false
+    # endpoint: https://s3.amazonaws.com  # AWS S3
+    # endpoint: https://nyc3.digitaloceanspaces.com  # DigitalOcean Spaces
+    # endpoint: https://storage.googleapis.com  # Google Cloud Storage
+    # endpoint: http://minio:9000  # MinIO
+    bucket: packages
+    region: us-east-1
+    # access_key and secret_key should be set via environment variables:
+    # S3_ACCESS_KEY and S3_SECRET_KEY
+
+# Repository settings
+repositories:
+  # Debian/Ubuntu APT repository
+  deb:
+    enabled: true
+    distributions:
+      - stable
+      - testing
+    components:
+      - main
+    architectures:
+      - amd64
+      - arm64
+
+  # RHEL/Fedora/Rocky RPM repository
+  rpm:
+    enabled: true
+    architectures:
+      - x86_64
+      - aarch64
+
+  # Arch Linux repository
+  arch:
+    enabled: true
+    name: custom
+    architectures:
+      - x86_64
+      - aarch64
+
+  # Alpine Linux repository
+  alpine:
+    enabled: true
+    versions:
+      - v3.19
+      - v3.18
+    branches:
+      - main
+    architectures:
+      - x86_64
+      - aarch64
+
+# GPG signing
+gpg:
+  # Auto-generate key if not exists
+  auto_generate: true
+  # Key settings for auto-generation
+  key_type: RSA
+  key_length: 4096
+  name: "Package Repository"
+  email: "repo@localhost"
+  # Import existing key (optional)
+  # import_key: /path/to/private.key
+
+# Cleanup and retention
+retention:
+  # Keep N versions of each package (0 = keep all)
+  keep_versions: 5
+  # Delete packages older than N days (0 = never)
+  max_age_days: 0
+
+# Monitoring
+monitoring:
+  # Enable Prometheus metrics endpoint
+  prometheus:
+    enabled: true
+    path: /metrics
+
+  # Health check settings
+  health:
+    # Include detailed status in health check
+    detailed: true

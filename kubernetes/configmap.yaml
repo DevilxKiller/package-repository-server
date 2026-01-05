@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: package-repo-config
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+data:
+  # Ferron configuration
+  ferron.yaml: |
+    global:
+      serverAdministratorEmail: "admin@localhost"
+      enableLogging: true
+      logFilePath: "/var/log/package-repo/ferron-access.log"
+      errorLogFilePath: "/var/log/package-repo/ferron-error.log"
+      enableCompression: true
+
+    server:
+      - listen: 80
+        serverNames:
+          - "*"
+
+        locations:
+          - path: "/repo.gpg"
+            root: "/data/packages"
+
+          - path: "/setup/"
+            proxy:
+              host: "127.0.0.1"
+              port: 8080
+              path: "/setup/"
+
+          - path: "/api/"
+            proxy:
+              host: "127.0.0.1"
+              port: 8080
+              path: "/api/"
+            clientMaxBodySize: 524288000
+
+          - path: "/health"
+            proxy:
+              host: "127.0.0.1"
+              port: 8080
+              path: "/health"
+
+          - path: "/ready"
+            proxy:
+              host: "127.0.0.1"
+              port: 8080
+              path: "/ready"
+
+          - path: "/deb/"
+            root: "/data/packages/deb"
+            index: ""
+            directoryListing: true
+            headers:
+              - name: "Cache-Control"
+                value: "public, max-age=300"
+
+          - path: "/rpm/"
+            root: "/data/packages/rpm"
+            index: ""
+            directoryListing: true
+            headers:
+              - name: "Cache-Control"
+                value: "public, max-age=300"
+
+          - path: "/arch/"
+            root: "/data/packages/arch"
+            index: ""
+            directoryListing: true
+            headers:
+              - name: "Cache-Control"
+                value: "public, max-age=300"
+
+          - path: "/alpine/"
+            root: "/data/packages/alpine"
+            index: ""
+            directoryListing: true
+            headers:
+              - name: "Cache-Control"
+                value: "public, max-age=300"

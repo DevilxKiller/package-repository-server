@@ -1,0 +1,14 @@
+version: '3.8'
+
+# Docker Compose override for TLS/HTTPS
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+
+services:
+  package-repo:
+    environment:
+      - TLS_MODE=${TLS_MODE:-letsencrypt}
+      - DOMAIN=${DOMAIN:?DOMAIN is required for TLS}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@localhost}
+    volumes:
+      # Override with TLS config
+      - ../config/ferron-tls.yaml:/etc/ferron/ferron.yaml:ro

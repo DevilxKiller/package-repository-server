@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  package-repo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: package-repo
+    restart: unless-stopped
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS (if TLS enabled)
+      - "8080:8080"  # API server (internal)
+    environment:
+      # API authentication (comma-separated list of valid API keys)
+      - API_KEYS=${API_KEYS:-default-change-me}
+
+      # Domain for TLS (required for Let's Encrypt)
+      - DOMAIN=${DOMAIN:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@localhost}
+
+      # TLS mode: none, selfsigned, letsencrypt, manual
+      - TLS_MODE=${TLS_MODE:-none}
+
+      # S3-compatible storage (optional)
+      - S3_ENABLED=${S3_ENABLED:-false}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-}
+      - S3_REGION=${S3_REGION:-us-east-1}
+
+      # Repository settings
+      - REPO_DATA_DIR=/data/packages
+      - REPO_GPG_DIR=/data/gpg
+      - REPO_CONFIG_DIR=/data/config
+      - RUST_LOG=${RUST_LOG:-info}
+    volumes:
+      # Persistent storage for packages
+      - package-data:/data/packages
+      # GPG keys (persist these!)
+      - gpg-data:/data/gpg
+      # TLS certificates
+      - cert-data:/data/certs
+      # ACME challenge directory
+      - acme-data:/data/acme
+      # Ferron configuration (choose one)
+      # For HTTP only:
+      - ../config/ferron.yaml:/etc/ferron/ferron.yaml:ro
+      # For HTTPS (uncomment and comment above):
+      # - ../config/ferron-tls.yaml:/etc/ferron/ferron.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  package-data:
+    driver: local
+  gpg-data:
+    driver: local
+  cert-data:
+    driver: local
+  acme-data:
+    driver: local

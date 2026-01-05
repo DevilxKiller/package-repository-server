@@ -1,0 +1,47 @@
+{{- if .Values.persistence.data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "package-repo.fullname" . }}-data
+  labels:
+    {{- include "package-repo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  {{- with .Values.persistence.data.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.data.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+  {{- if .Values.persistence.data.storageClass }}
+  storageClassName: {{ .Values.persistence.data.storageClass }}
+  {{- end }}
+{{- end }}
+
+---
+
+{{- if .Values.persistence.gpg.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "package-repo.fullname" . }}-gpg
+  labels:
+    {{- include "package-repo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gpg
+  {{- with .Values.persistence.gpg.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.gpg.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.gpg.size }}
+  {{- if .Values.persistence.gpg.storageClass }}
+  storageClassName: {{ .Values.persistence.gpg.storageClass }}
+  {{- end }}
+{{- end }}

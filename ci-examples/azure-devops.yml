@@ -1,0 +1,107 @@
+# azure-pipelines.yml
+# Azure DevOps Pipeline for publishing packages
+
+trigger:
+  tags:
+    include:
+      - 'v*'
+
+variables:
+  - group: package-repo-credentials  # Contains PACKAGE_REPO_URL and PACKAGE_REPO_API_KEY
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildDEB
+        pool:
+          vmImage: 'ubuntu-latest'
+        container: debian:bookworm
+        steps:
+          - checkout: self
+
+          - script: |
+              apt-get update && apt-get install -y dpkg-dev debhelper
+              dpkg-deb --build ./package mypackage_$(Build.SourceBranchName)_amd64.deb
+            displayName: 'Build DEB Package'
+
+          - publish: $(System.DefaultWorkingDirectory)
+            artifact: deb-package
+            patterns: '**/*.deb'
+
+      - job: BuildRPM
+        pool:
+          vmImage: 'ubuntu-latest'
+        container: fedora:latest
+        steps:
+          - checkout: self
+
+          - script: |
+              dnf install -y rpm-build rpmdevtools
+              rpmdev-setuptree
+              rpmbuild -ba mypackage.spec
+              cp ~/rpmbuild/RPMS/x86_64/*.rpm $(System.DefaultWorkingDirectory)/
+            displayName: 'Build RPM Package'
+
+          - publish: $(System.DefaultWorkingDirectory)
+            artifact: rpm-package
+            patterns: '**/*.rpm'
+
+  - stage: Publish
+    dependsOn: Build
+    jobs:
+      - job: PublishDEB
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - download: current
+            artifact: deb-package
+
+          - script: |
+              for deb in $(Pipeline.Workspace)/deb-package/*.deb; do
+                echo "Uploading ${deb}..."
+                curl -X POST \
+                  -H "X-API-Key: $(PACKAGE_REPO_API_KEY)" \
+                  -F "file=@${deb}" \
+                  "$(PACKAGE_REPO_URL)/api/v1/upload/deb"
+              done
+            displayName: 'Publish DEB to Repository'
+
+      - job: PublishRPM
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - download: current
+            artifact: rpm-package
+
+          - script: |
+              for rpm in $(Pipeline.Workspace)/rpm-package/*.rpm; do
+                echo "Uploading ${rpm}..."
+                curl -X POST \
+                  -H "X-API-Key: $(PACKAGE_REPO_API_KEY)" \
+                  -F "file=@${rpm}" \
+                  "$(PACKAGE_REPO_URL)/api/v1/upload/rpm"
+              done
+            displayName: 'Publish RPM to Repository'
+
+# Template for reusable publishing
+# Save as templates/publish-package.yml
+# parameters:
+#   - name: packageType
+#     type: string
+#   - name: artifactName
+#     type: string
+#   - name: filePattern
+#     type: string
+#
+# steps:
+#   - download: current
+#     artifact: ${{ parameters.artifactName }}
+#
+#   - script: |
+#       for pkg in $(Pipeline.Workspace)/${{ parameters.artifactName }}/${{ parameters.filePattern }}; do
+#         curl -X POST \
+#           -H "X-API-Key: $(PACKAGE_REPO_API_KEY)" \
+#           -F "file=@${pkg}" \
+#           "$(PACKAGE_REPO_URL)/api/v1/upload/${{ parameters.packageType }}"
+#       done
+#     displayName: 'Publish ${{ parameters.packageType }} to Repository'

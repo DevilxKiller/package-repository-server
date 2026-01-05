@@ -1,0 +1,156 @@
+# Default values for package-repo
+
+# Number of replicas
+replicaCount: 1
+
+image:
+  repository: package-repo
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Container security context
+securityContext: {}
+
+# Service configuration
+service:
+  type: ClusterIP
+  httpPort: 80
+  apiPort: 8080
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: packages.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: package-repo-tls
+  #    hosts:
+  #      - packages.example.com
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Autoscaling (disabled by default due to PVC constraints)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Persistence configuration
+persistence:
+  data:
+    enabled: true
+    size: 50Gi
+    storageClass: ""  # Use default storage class if empty
+    accessMode: ReadWriteOnce
+    annotations: {}
+
+  gpg:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    annotations: {}
+
+# Application configuration
+config:
+  # Log level
+  logLevel: info
+
+  # API keys for authentication (will be stored in secret)
+  apiKeys:
+    - "change-me-in-production"
+
+  # S3 storage configuration
+  s3:
+    enabled: false
+    endpoint: ""  # Leave empty for AWS S3
+    bucket: "packages"
+    region: "us-east-1"
+    # Credentials (set via existingSecret or directly)
+    accessKey: ""
+    secretKey: ""
+    existingSecret: ""
+    accessKeyKey: "access-key"
+    secretKeyKey: "secret-key"
+
+# Health check configuration
+healthCheck:
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Extra environment variables
+extraEnv: []
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# Extra volumes
+extraVolumes: []
+# - name: extra-config
+#   configMap:
+#     name: extra-config
+
+# Extra volume mounts
+extraVolumeMounts: []
+# - name: extra-config
+#   mountPath: /etc/extra
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecarContainers: []

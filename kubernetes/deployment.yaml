@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: package-repo
+  namespace: package-repo
+  labels:
+    app.kubernetes.io/name: package-repo
+    app.kubernetes.io/component: server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Use Recreate for single-replica with PVC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: package-repo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: package-repo
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        fsGroup: 1000
+
+      containers:
+        - name: package-repo
+          image: package-repo:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: api
+              containerPort: 8080
+              protocol: TCP
+
+          env:
+            - name: REPO_DATA_DIR
+              value: /data/packages
+            - name: REPO_GPG_DIR
+              value: /data/gpg
+            - name: RUST_LOG
+              value: info
+            - name: API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: package-repo-secrets
+                  key: api-keys
+
+            # S3 configuration (optional)
+            - name: S3_ENABLED
+              value: "false"
+
+          volumeMounts:
+            - name: data
+              mountPath: /data/packages
+            - name: gpg
+              mountPath: /data/gpg
+            - name: config
+              mountPath: /etc/ferron/ferron.yaml
+              subPath: ferron.yaml
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: api
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: package-repo-data
+        - name: gpg
+          persistentVolumeClaim:
+            claimName: package-repo-gpg
+        - name: config
+          configMap:
+            name: package-repo-config

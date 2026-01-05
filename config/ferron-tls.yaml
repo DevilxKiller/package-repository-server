@@ -1,0 +1,126 @@
+# Ferron Configuration with TLS/HTTPS Support
+# Use this configuration for production with HTTPS
+
+global:
+  serverAdministratorEmail: "${ADMIN_EMAIL:-admin@localhost}"
+  enableLogging: true
+  logFilePath: "/var/log/package-repo/ferron-access.log"
+  errorLogFilePath: "/var/log/package-repo/ferron-error.log"
+  enableCompression: true
+
+server:
+  # HTTP server - redirect all traffic to HTTPS
+  - listen: 80
+    serverNames:
+      - "*"
+    locations:
+      - path: "/"
+        redirect:
+          statusCode: 301
+          url: "https://${DOMAIN}$request_uri"
+
+  # HTTPS server (port 443)
+  - listen: 443
+    serverNames:
+      - "${DOMAIN}"
+
+    # TLS Configuration
+    tls:
+      cert: "/data/certs/fullchain.pem"
+      key: "/data/certs/privkey.pem"
+      # Modern TLS settings
+      minVersion: "1.2"
+      cipherSuites:
+        - "TLS_AES_128_GCM_SHA256"
+        - "TLS_AES_256_GCM_SHA384"
+        - "TLS_CHACHA20_POLY1305_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+
+    locations:
+      # ACME challenge for Let's Encrypt
+      - path: "/.well-known/acme-challenge/"
+        root: "/data/acme"
+
+      # GPG public key
+      - path: "/repo.gpg"
+        root: "/data/packages"
+        headers:
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # Setup scripts
+      - path: "/setup/"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/setup/"
+        headers:
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # API proxy
+      - path: "/api/"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/api/"
+        clientMaxBodySize: 524288000
+        headers:
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # Health endpoints
+      - path: "/health"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/health"
+
+      - path: "/ready"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/ready"
+
+      # APT Repository
+      - path: "/deb/"
+        root: "/data/packages/deb"
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # YUM/DNF Repository
+      - path: "/rpm/"
+        root: "/data/packages/rpm"
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # Arch Linux Repository
+      - path: "/arch/"
+        root: "/data/packages/arch"
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"
+
+      # Alpine Linux Repository
+      - path: "/alpine/"
+        root: "/data/packages/alpine"
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+          - name: "Strict-Transport-Security"
+            value: "max-age=31536000; includeSubDomains"

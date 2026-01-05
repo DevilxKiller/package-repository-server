@@ -1,0 +1,84 @@
+# Ferron Configuration for Package Repository Server
+# https://github.com/ferronweb/ferron
+
+global:
+  serverAdministratorEmail: "${ADMIN_EMAIL:-admin@localhost}"
+  enableLogging: true
+  logFilePath: "/var/log/package-repo/ferron-access.log"
+  errorLogFilePath: "/var/log/package-repo/ferron-error.log"
+  enableCompression: true
+
+server:
+  # HTTP server (port 80) - redirects to HTTPS if TLS enabled
+  - listen: 80
+    serverNames:
+      - "*"
+
+    locations:
+      # GPG public key
+      - path: "/repo.gpg"
+        root: "/data/packages"
+
+      # Setup scripts (one-liner install)
+      - path: "/setup/"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/setup/"
+
+      # API proxy to Rust server
+      - path: "/api/"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/api/"
+        clientMaxBodySize: 524288000  # 500MB
+
+      # Health check endpoints
+      - path: "/health"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/health"
+
+      - path: "/ready"
+        proxy:
+          host: "127.0.0.1"
+          port: 8080
+          path: "/ready"
+
+      # APT Repository
+      - path: "/deb/"
+        root: "/data/packages/deb"
+        index: ""
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+
+      # YUM/DNF Repository
+      - path: "/rpm/"
+        root: "/data/packages/rpm"
+        index: ""
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+
+      # Arch Linux Repository
+      - path: "/arch/"
+        root: "/data/packages/arch"
+        index: ""
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
+
+      # Alpine Linux Repository
+      - path: "/alpine/"
+        root: "/data/packages/alpine"
+        index: ""
+        directoryListing: true
+        headers:
+          - name: "Cache-Control"
+            value: "public, max-age=300"
